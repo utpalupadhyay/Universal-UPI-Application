@@ -1,0 +1,20 @@
+{
+  "name": "universal-upi",
+  "version": "1.0.0",
+  "main": "app.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "test": "node test/backend.test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "qrcode": "^1.5.4",
+    "uuid": "^14.0.2",
+    "ws": "^8.21.3"
+  }
+}

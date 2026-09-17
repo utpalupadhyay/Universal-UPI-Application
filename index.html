@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal UPI — Global Payment System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Status Bar & Account Switcher -->
+        <div class="top-nav-bar">
+            <div class="account-selector-wrapper">
+                <label for="sender-account-select"><i data-lucide="wallet"></i> My Account:</label>
+                <select id="sender-account-select" class="account-select"></select>
+            </div>
+            <div class="gateway-badge" id="gateway-status">
+                <span class="pulse-dot"></span>
+                <span id="gateway-status-text">Backend Connecting...</span>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <header>
+            <div class="logo">
+                <i data-lucide="globe" class="logo-icon"></i>
+                <h1>Universal UPI</h1>
+            </div>
+            <p class="subtitle">Interoperable Cross-Border Payment Interface</p>
+        </header>
+
+        <!-- Main Navigation Bar -->
+        <nav class="main-nav">
+            <button class="nav-tab active" data-view="view-send">
+                <i data-lucide="send"></i> Send
+            </button>
+            <button class="nav-tab" data-view="view-generate-qr">
+                <i data-lucide="qr-code"></i> My QR
+            </button>
+            <button class="nav-tab" data-view="view-history">
+                <i data-lucide="history"></i> History
+            </button>
+            <button class="nav-tab" data-view="view-ledger">
+                <i data-lucide="scale"></i> Ledger
+            </button>
+        </nav>
+
+        <!-- VIEW 1: SEND PAYMENT -->
+        <main id="view-send" class="view-panel active">
+            <!-- Payment Target Selection -->
+            <section class="card target-section">
+                <div class="tabs">
+                    <button class="tab-btn active" data-target="qr-scan">Scan QR</button>
+                    <button class="tab-btn" data-target="manual-entry">Enter ID / VPA</button>
+                </div>
+                
+                <!-- QR Scanner Tab -->
+                <div class="tab-content active" id="qr-scan">
+                    <div id="reader" style="width: 100%; border-radius: 12px; overflow: hidden; background: rgba(0,0,0,0.3);"></div>
+                    <div class="qr-upload-hint">
+                        <span>Or upload QR image:</span>
+                        <input type="file" id="qr-file-input" accept="image/*" class="file-picker">
+                    </div>
+                </div>
+
+                <!-- Manual Entry Tab -->
+                <div class="tab-content" id="manual-entry">
+                    <div class="input-group">
+                        <label for="payment-id">Recipient Address (UPI VPA, IBAN, FedNow, FPS, Phone)</label>
+                        <div class="input-with-action">
+                            <input type="text" id="payment-id" placeholder="e.g. rahul@okhdfcbank, $alex, DE8937..., +919876543210">
+                            <button id="btn-quick-sample" class="btn-sample" title="Insert Sample Recipient">Sample</button>
+                        </div>
+                    </div>
+                    <!-- Recipient Verification Card -->
+                    <div id="recipient-badge" class="recipient-badge hidden">
+                        <div class="recipient-info">
+                            <i data-lucide="check-circle-2" class="icon-verified"></i>
+                            <div>
+                                <strong id="recip-name">Verified Name</strong>
+                                <p id="recip-details">Bank • Rail</p>
+                            </div>
+                        </div>
+                        <span id="recip-rail-tag" class="rail-tag">UPI</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Currencies & Amount -->
+            <section class="card amount-section">
+                <div class="currency-selectors">
+                    <div class="input-group">
+                        <label for="sender-country">From (Sender)</label>
+                        <select id="sender-country">
+                            <option value="USD">🇺🇸 USD - US Dollar</option>
+                            <option value="INR">🇮🇳 INR - Indian Rupee</option>
+                            <option value="EUR">🇪🇺 EUR - Euro</option>
+                            <option value="GBP">🇬🇧 GBP - British Pound</option>
+                            <option value="SGD">🇸🇬 SGD - Singapore Dollar</option>
+                            <option value="AED">🇦🇪 AED - UAE Dirham</option>
+                        </select>
+                    </div>
+                    <button id="btn-swap-currency" class="exchange-btn" title="Swap Currencies">
+                        <i data-lucide="arrow-right-left" class="exchange-icon"></i>
+                    </button>
+                    <div class="input-group">
+                        <label for="receiver-country">To (Recipient)</label>
+                        <select id="receiver-country">
+                            <option value="INR">🇮🇳 INR - Indian Rupee</option>
+                            <option value="USD">🇺🇸 USD - US Dollar</option>
+                            <option value="EUR">🇪🇺 EUR - Euro</option>
+                            <option value="GBP">🇬🇧 GBP - British Pound</option>
+                            <option value="SGD">🇸🇬 SGD - Singapore Dollar</option>
+                            <option value="AED">🇦🇪 AED - UAE Dirham</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="input-group amount-group">
+                    <div class="amount-label-row">
+                        <label for="send-amount">Amount to Send</label>
+                        <span id="sender-available-balance" class="balance-hint">Balance: --</span>
+                    </div>
+                    <div class="amount-wrapper">
+                        <span class="currency-symbol" id="sender-symbol">$</span>
+                        <input type="number" id="send-amount" placeholder="0.00" min="1" step="any">
+                    </div>
+                </div>
+            </section>
+
+            <!-- Guaranteed FX Quote Lock Card -->
+            <section class="card breakdown-section" id="breakdown-section">
+                <div class="breakdown-header">
+                    <h3>Guaranteed FX Rate Lock</h3>
+                    <div id="quote-timer-badge" class="timer-badge hidden">
+                        <i data-lucide="clock" class="timer-icon"></i>
+                        <span id="quote-timer-text">03:00</span>
+                    </div>
+                </div>
+
+                <div class="breakdown-row">
+                    <span>Exchange Rate</span>
+                    <span id="display-rate" class="mono">--</span>
+                </div>
+                <div class="breakdown-row">
+                    <span>Network & Switch Fee</span>
+                    <span id="display-fee" class="mono">--</span>
+                </div>
+                <div class="breakdown-row highlight">
+                    <span>Recipient Receives</span>
+                    <span id="display-converted" class="mono highlight-text">--</span>
+                </div>
+                <div id="quote-status-bar" class="quote-progress-bar hidden">
+                    <div id="quote-progress-fill" class="quote-progress-fill"></div>
+                </div>
+            </section>
+
+            <button id="btn-confirm" class="primary-btn" disabled>
+                <i data-lucide="shield-check"></i> Authorize Payment
+            </button>
+        </main>
+
+        <!-- VIEW 2: GENERATE UNIVERSAL QR -->
+        <section id="view-generate-qr" class="view-panel hidden">
+            <div class="card text-center">
+                <h2>Your Universal UPI QR</h2>
+                <p class="subtitle">Accept payments from any global banking rail</p>
+                <div class="qr-preview-box">
+                    <img id="my-qr-img" src="" alt="Universal UPI QR" class="qr-image">
+                    <div id="qr-loading" class="loader small"></div>
+                </div>
+                <div class="qr-details">
+                    <strong id="my-qr-vpa">user@upi</strong>
+                    <p id="my-qr-rail">Connected Rail: UPI</p>
+                </div>
+                <div class="input-group" style="text-align: left; margin-top: 16px;">
+                    <label for="custom-qr-amount">Add Specific Amount (Optional)</label>
+                    <div class="amount-wrapper">
+                        <span class="currency-symbol" id="my-qr-symbol">₹</span>
+                        <input type="number" id="custom-qr-amount" placeholder="0.00">
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button id="btn-refresh-qr" class="secondary-btn">Update QR</button>
+                    <button id="btn-copy-upi-uri" class="secondary-btn">Copy Link</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 3: TRANSACTION HISTORY -->
+        <section id="view-history" class="view-panel hidden">
+            <div class="card">
+                <div class="history-header">
+                    <h2>Recent Transfers</h2>
+                    <button id="btn-refresh-history" class="icon-btn" title="Refresh"><i data-lucide="rotate-cw"></i></button>
+                </div>
+                <div id="history-list" class="history-list">
+                    <p class="empty-state">No transactions yet. Send your first payment!</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 4: DOUBLE-ENTRY LEDGER & AUDIT EXPLORER -->
+        <section id="view-ledger" class="view-panel hidden">
+            <div class="card">
+                <div class="ledger-header">
+                    <div>
+                        <h2>Double-Entry Ledger</h2>
+                        <p class="subtitle">Mathematical proof of financial balance (Debits = Credits)</p>
+                    </div>
+                    <div id="ledger-audit-tag" class="audit-tag verified">
+                        <i data-lucide="shield-check"></i> 100% Balanced
+                    </div>
+                </div>
+                <div id="ledger-entries-list" class="ledger-list"></div>
+            </div>
+        </section>
+
+        <!-- STAGE-BY-STAGE PIPELINE ROUTING OVERLAY -->
+        <div id="loading-flow" class="pipeline-overlay hidden">
+            <div class="card pipeline-card">
+                <div class="loader"></div>
+                <h2 id="pipeline-title">Universal Payment Orchestrator</h2>
+                <p id="pipeline-sub">Routing cross-border settlement...</p>
+
+                <div class="pipeline-steps">
+                    <div class="step-item" id="step-1">
+                        <i data-lucide="shield" class="step-icon"></i>
+                        <div class="step-text">
+                            <strong>1. Recipient & AML Screening</strong>
+                            <span class="step-desc">Sanctions check & velocity validation</span>
+                        </div>
+                    </div>
+                    <div class="step-item" id="step-2">
+                        <i data-lucide="lock" class="step-icon"></i>
+                        <div class="step-text">
+                            <strong>2. Guaranteed FX Rate Locked</strong>
+                            <span class="step-desc">Liquidity pool rate sealed</span>
+                        </div>
+                    </div>
+                    <div class="step-item" id="step-3">
+                        <i data-lucide="wallet" class="step-icon"></i>
+                        <div class="step-text">
+                            <strong>3. Sender Account Debited</strong>
+                            <span class="step-desc">Funds reserved in clearing pool</span>
+                        </div>
+                    </div>
+                    <div class="step-item" id="step-4">
+                        <i data-lucide="git-branch" class="step-icon"></i>
+                        <div class="step-text">
+                            <strong id="step-rail-name">4. Regional Rail Settlement</strong>
+                            <span class="step-desc">Dispatching to downstream switch</span>
+                        </div>
+                    </div>
+                    <div class="step-item" id="step-5">
+                        <i data-lucide="check-circle" class="step-icon"></i>
+                        <div class="step-text">
+                            <strong>5. Double-Entry Ledger Sealed</strong>
+                            <span class="step-desc">Immutable journal entry recorded</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SUCCESS SCREEN -->
+        <div id="success-flow" class="hidden card text-center success-card">
+            <div class="success-icon-wrapper">
+                <i data-lucide="check-circle" class="success-icon"></i>
+            </div>
+            <h2>Payment Successful!</h2>
+            <p class="success-amount" id="final-amount">--</p>
+            <p class="success-subtitle">Sent to <span id="final-id">Recipient</span></p>
+            
+            <div class="receipt-details">
+                <div class="breakdown-row">
+                    <span>Destination Rail</span>
+                    <strong id="final-network">UPI (India)</strong>
+                </div>
+                <div class="breakdown-row">
+                    <span>Transaction ID</span>
+                    <strong id="final-tx" class="mono">TX123456789</strong>
+                </div>
+                <div class="breakdown-row">
+                    <span>Rail Reference</span>
+                    <strong id="final-rail-tx" class="mono">UPI_98271827</strong>
+                </div>
+                <div class="breakdown-row">
+                    <span>Ledger Journal ID</span>
+                    <strong id="final-journal-id" class="mono">jrn_82718</strong>
+                </div>
+                <div class="breakdown-row">
+                    <span>Timestamp</span>
+                    <strong id="final-timestamp">--</strong>
+                </div>
+            </div>
+            
+            <div class="receipt-actions">
+                <button id="btn-print-receipt" class="secondary-btn"><i data-lucide="printer"></i> Print Receipt</button>
+                <button id="btn-reset" class="primary-btn"><i data-lucide="plus-circle"></i> New Transfer</button>
+            </div>
+        </div>
+
+        <!-- MPIN SECURITY MODAL -->
+        <div id="mpin-modal" class="modal-overlay hidden">
+            <div class="card modal-card">
+                <div class="modal-header">
+                    <div class="modal-icon"><i data-lucide="key-round"></i></div>
+                    <h3>Enter Transaction PIN</h3>
+                    <p class="subtitle">Authorize payment of <strong id="mpin-modal-amount">--</strong></p>
+                </div>
+                <div class="mpin-input-wrapper">
+                    <input type="password" id="mpin-input" maxlength="4" placeholder="••••" autocomplete="off" class="mpin-box">
+                </div>
+                <p class="hint-text">Demo MPIN is <code>1234</code></p>
+                <div class="modal-actions">
+                    <button id="btn-mpin-cancel" class="secondary-btn">Cancel</button>
+                    <button id="btn-mpin-submit" class="primary-btn">Confirm & Send</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    
+    <script src="app.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
